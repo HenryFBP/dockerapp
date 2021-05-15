@@ -1,8 +1,11 @@
+import redis
 from flask import Flask, request, render_template
 
 app = Flask(__name__)
 default_key = '1'
-cache = {default_key: 'one'}
+cache = redis.StrictRedis(host='redis', port=6379, db=0)
+# our host is `redis` and not `localhost` because a different machine on LAN is hosting the Redis service, and we set its hostname to "redis"
+cache.set(default_key, "one")
 
 @app.route('/', methods=['GET', 'POST'])
 def mainpage():
@@ -12,11 +15,11 @@ def mainpage():
 	    key = request.form['key']
 
 	if request.method == 'POST' and request.form['submit'] == 'save':
-		cache[key] = request.form['cache_value']
+		cache.set(key, request.form['cache_value'])
 
 	cache_value = None;
-	if key in cache:
-		cache_value = cache[key]
+	if cache.get(key):
+		cache_value = cache.get(key).decode('utf-8')
 
 	return render_template('index.html', key=key, cache_value=cache_value)
 
